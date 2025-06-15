@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestionnaire client</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+  <h1 class="mb-4">Gestionnaire client</h1>
+
+  <!-- Statistiques -->
+  <section class="mb-4">
+    <h2>Statistiques</h2>
+    <ul class="list-group">
+      <li class="list-group-item">Nombre de clients : <strong>{{ nb_clients }}</strong></li>
+      <li class="list-group-item">CA total : <strong>{{ ca_total }} €</strong></li>
+      <li class="list-group-item">Date de la dernière opération : <strong>{{ derniere_operation }}</strong></li>
+    </ul>
+  </section>
+
+  <!-- Ajout client -->
+  <section class="mb-4">
+    <h2>Ajout d'un nouveau client</h2>
+    <form method="POST" action="/add-client" class="row g-3">
+      <div class="col-md-6"><input name="nom" class="form-control" placeholder="Nom" required></div>
+      <div class="col-md-6"><input name="prenom" class="form-control" placeholder="Prénom" required></div>
+      <div class="col-md-4"><input name="ville" class="form-control" placeholder="Ville" required></div>
+      <div class="col-md-4"><input name="code_postal" class="form-control" placeholder="Code postal"></div>
+      <div class="col-md-4"><input name="telephone" class="form-control" placeholder="Téléphone"></div>
+      <div class="col-12"><input name="adresse" class="form-control" placeholder="Adresse"></div>
+      <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary">Ajouter</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Répertoire clients -->
+  <section class="mb-4">
+    <h2>Répertoire des clients</h2>
+    <form method="GET" action="/" class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Filtrer par ville:</label>
+        <input list="villes" name="ville" value="{{ ville }}" class="form-control" placeholder="Commencez à taper...">
+        <datalist id="villes">
+          {% for v in villes %}<option value="{{ v }}">{% endfor %}
+        </datalist>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Trier par:</label>
+        <select name="tri" class="form-select">
+          <option value="recent" {% if tri == 'recent' %}selected{% endif %}>Derniers visités</option>
+          <option value="ancien" {% if tri == 'ancien' %}selected{% endif %}>Clients inactifs</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Recherche:</label>
+        <input type="text" name="recherche" value="{{ recherche }}" class="form-control" placeholder="Nom, adresse, tél...">
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button type="submit" class="btn btn-outline-primary">Filtrer</button>
+        <a href="/reset-filters" class="btn btn-outline-secondary">Défiltrer</a>
+        <a href="/export-clients" class="btn btn-success">Exporter CSV</a>
+      </div>
+    </form>
+
+    <table class="table table-bordered table-striped mt-3">
+      <thead class="table-light">
+        <tr>
+          <th>Fiche</th><th>Nom</th><th>Prénom</th><th>Ville</th><th>Code postal</th><th>Téléphone</th><th>Adresse</th><th>Dern. visite</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for client in clients %}
+        <tr>
+          <td><a href="/client/{{ client['id'] }}" class="btn btn-link">Fiche</a></td>
+          <td>{{ client['nom'] }}</td>
+          <td>{{ client['prenom'] }}</td>
+          <td>{{ client['ville'] }}</td>
+          <td>{{ client['code_postal'] }}</td>
+          <td>{{ client['telephone'] }}</td>
+          <td>{{ client['adresse'] }}</td>
+          <td>{{ client['derniere_visite'] or 'Aucune' }}</td>
+          <td>
+            {% if request.args.get('confirm') == client['id']|string %}
+              <form method="POST" action="/archive-client/{{ client['id'] }}">
+                <span>Confirmer ?</span>
+                <button type="submit" class="btn btn-sm btn-danger">Oui</button>
+                <a href="/" class="btn btn-sm btn-secondary">Non</a>
+              </form>
+            {% else %}
+              <a href="/?confirm={{ client['id'] }}" class="btn btn-sm btn-warning">Archiver</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Archivés -->
+  <section>
+    <h3>Clients archivés</h3>
+    <table class="table table-bordered">
+      <thead class="table-light">
+        <tr><th>Nom</th><th>Prénom</th><th>Ville</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for client in archives %}
+        <tr>
+          <td>{{ client['nom'] }}</td>
+          <td>{{ client['prenom'] }}</td>
+          <td>{{ client['ville'] }}</td>
+          <td class="d-flex gap-2">
+            {% if request.args.get('confirm_restore') == client['id']|string %}
+              <form method="POST" action="/restore-client/{{ client['id'] }}">
+                <button type="submit" class="btn btn-sm btn-success">Confirmer</button>
+                <a href="/" class="btn btn-sm btn-secondary">Annuler</a>
+              </form>
+            {% else %}
+              <a href="/?confirm_restore={{ client['id'] }}" class="btn btn-sm btn-outline-success">Restaurer</a>
+            {% endif %}
+            {% if request.args.get('confirm_delete') == client['id']|string %}
+              <form method="POST" action="/delete-client/{{ client['id'] }}">
+                <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                <a href="/" class="btn btn-sm btn-secondary">Annuler</a>
+              </form>
+            {% else %}
+              <a href="/?confirm_delete={{ client['id'] }}" class="btn btn-sm btn-outline-danger">Supprimer</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+</body>
+</html>
