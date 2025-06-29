@@ -1,107 +1,164 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Gestion Clients - Tableau de bord</title>
+  <meta charset="UTF-8">
+  <title>CRM - Tableau de bord</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-light">
+  <div class="container py-4">
+    <h1 class="mb-4 text-center">Tableau de bord CRM</h1>
 
-    <!-- Section Statistiques -->
-    <section id="statistiques">
-        <h2>Statistiques -test</h2>
-        <!-- Exemple de contenu statistique -->
-        <p>Total clients : {{ total_clients }}</p>
-        <p>Clients actifs : {{ clients_actifs }}</p>
-        <p>Clients archivés : {{ clients_archives }}</p>
+    <!-- Statistiques -->
+    <section class="mb-4">
+      <div class="row text-center">
+        <div class="col-md-4">
+          <div class="card p-3 shadow-sm">
+            <h5>Nombre de clients</h5>
+            <p class="display-6">{{ nb_clients }}</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card p-3 shadow-sm">
+            <h5>CA total</h5>
+            <p class="display-6">{{ ca_total }} €</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card p-3 shadow-sm">
+            <h5>Dernière opération</h5>
+            <p class="display-6">{{ derniere_operation }}</p>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- Section Opérations futures (ajoutée sous Statistiques) -->
-    <section id="operations-futures">
-        <h2>Opérations futures</h2>
-        <table border="1">
+    <!-- Filtres et export -->
+    <section class="mb-3">
+      <form class="row g-2 align-items-end" method="GET" action="/">
+        <div class="col-md-3">
+          <label class="form-label">Ville</label>
+          <input list="villes" name="ville" value="{{ ville }}" class="form-control" placeholder="Commencez à taper...">
+          <datalist id="villes">
+            {% for v in villes %}
+              <option value="{{ v }}">
+            {% endfor %}
+          </datalist>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Trier par</label>
+          <select class="form-select" name="tri">
+            <option value="recent" {% if tri == 'recent' %}selected{% endif %}>Derniers visités</option>
+            <option value="ancien" {% if tri == 'ancien' %}selected{% endif %}>Clients inactifs</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Recherche</label>
+          <input type="text" name="recherche" class="form-control" placeholder="Nom, adresse, tél..." value="{{ recherche }}">
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Filtrer</button>
+          <a href="/reset-filters" class="btn btn-secondary">Défiltrer</a>
+          <a href="/export-clients" class="btn btn-success">Exporter</a>
+        </div>
+      </form>
+    </section>
+
+    <!-- Tableau des clients -->
+    <section>
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Clients actifs</h5>
+          <table class="table table-striped">
             <thead>
-                <tr>
-                    <th>Date prévue</th>
-                    <th>Type d'opération</th>
-                    <th>Nom du client</th>
-                </tr>
+              <tr>
+                <th>Fiche</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Ville</th>
+                <th>Code postal</th>
+                <th>Téléphone</th>
+                <th>Adresse</th>
+                <th>Dernière visite</th>
+                <th>Action</th>
+              </tr>
             </thead>
             <tbody>
-                {% for operation in operations_futures %}
-                <tr>
-                    <td>{{ operation.date_prevue }}</td>
-                    <td>{{ operation.type_operation }}</td>
-                    <td>
-                        <!-- Lien vers la fiche du client -->
-                        <a href="/client/{{ operation.client_id }}">
-                            {{ operation.client_name }}
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
+              {% for client in clients %}
+              <tr>
+                <td><a href="/client/{{ client['id'] }}" class="btn btn-sm btn-outline-primary">Fiche</a></td>
+                <td>{{ client['nom'] }}</td>
+                <td>{{ client['prenom'] }}</td>
+                <td>{{ client['ville'] }}</td>
+                <td>{{ client['code_postal'] }}</td>
+                <td>{{ client['telephone'] }}</td>
+                <td>{{ client['adresse'] }}</td>
+                <td>{{ client['derniere_visite'] or 'Aucune' }}</td>
+                <td>
+                  {% if request.args.get('confirm') == client['id']|string %}
+                    <form method="POST" action="/archive-client/{{ client['id'] }}">
+                      <span>Confirmer ?</span>
+                      <button type="submit" class="btn btn-danger btn-sm">Oui</button>
+                      <a href="/" class="btn btn-secondary btn-sm">Non</a>
+                    </form>
+                  {% else %}
+                    <a href="/?confirm={{ client['id'] }}" class="btn btn-warning btn-sm">Archiver</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
             </tbody>
-        </table>
+          </table>
+        </div>
+      </div>
     </section>
 
-    <!-- Section Ajout d'un client -->
-    <section id="ajout-client">
-        <h2>Ajout d'un client</h2>
-        <form action="{{ url_for('add_client') }}" method="post">
-            <label for="nom">Nom :</label>
-            <input type="text" id="nom" name="nom" required>
-
-            <label for="email">Email :</label>
-            <input type="email" id="email" name="email" required>
-
-            <button type="submit">Ajouter</button>
-        </form>
-    </section>
-
-    <!-- Section Répertoire des clients -->
-    <section id="repertoire-clients">
-        <h2>Répertoire des clients</h2>
-        <table border="1">
+    <!-- Section archive -->
+    <section class="mt-5">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Clients archivés</h5>
+          <table class="table table-bordered">
             <thead>
-                <tr>
-                    <th>Nom</th>
-                    <th>Email</th>
-                    <th>Statut</th>
-                </tr>
+              <tr>
+                <th>Nom</th>
+                <th>Ville</th>
+                <th>Actions</th>
+              </tr>
             </thead>
             <tbody>
-                {% for client in clients %}
-                <tr>
-                    <td><a href="/client/{{ client.id }}">{{ client.nom }}</a></td>
-                    <td>{{ client.email }}</td>
-                    <td>{{ client.statut }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+              {% for client in archives %}
+              <tr>
+                <td>{{ client['nom'] }}</td>
+                <td>{{ client['ville'] }}</td>
+                <td>
+                  {% if request.args.get('confirm_restore') == client['id']|string %}
+                    <form method="POST" action="/restore-client/{{ client['id'] }}" class="d-inline">
+                      <span>Restaurer ?</span>
+                      <button type="submit" class="btn btn-success btn-sm">Oui</button>
+                      <a href="/" class="btn btn-secondary btn-sm">Non</a>
+                    </form>
+                  {% else %}
+                    <a href="/?confirm_restore={{ client['id'] }}" class="btn btn-outline-success btn-sm">Restaurer</a>
+                  {% endif %}
 
-    <!-- Section Clients archivés -->
-    <section id="clients-archives">
-        <h2>Clients archivés</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Nom</th>
-                    <th>Email</th>
-                    <th>Date d'archivage</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for client in clients_archives %}
-                <tr>
-                    <td><a href="/client/{{ client.id }}">{{ client.nom }}</a></td>
-                    <td>{{ client.email }}</td>
-                    <td>{{ client.date_archivage }}</td>
-                </tr>
-                {% endfor %}
+                  {% if request.args.get('confirm_delete') == client['id']|string %}
+                    <form method="POST" action="/delete-client/{{ client['id'] }}" class="d-inline">
+                      <span>Supprimer ?</span>
+                      <button type="submit" class="btn btn-danger btn-sm">Oui</button>
+                      <a href="/" class="btn btn-secondary btn-sm">Non</a>
+                    </form>
+                  {% else %}
+                    <a href="/?confirm_delete={{ client['id'] }}" class="btn btn-outline-danger btn-sm">Supprimer</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
             </tbody>
-        </table>
+          </table>
+        </div>
+      </div>
     </section>
-
+  </div>
 </body>
 </html>
