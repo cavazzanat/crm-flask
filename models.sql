@@ -1,7 +1,6 @@
-DROP TABLE IF EXISTS clients;
-
-CREATE TABLE clients (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+-- Table clients
+CREATE TABLE IF NOT EXISTS clients (
+    id SERIAL PRIMARY KEY,
     nom TEXT NOT NULL,
     prenom TEXT,
     adresse TEXT,
@@ -12,15 +11,15 @@ CREATE TABLE clients (
     remarque TEXT,
     modele TEXT,
     remarques_piano TEXT,
-    archive INTEGER DEFAULT 0
+    archive BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE operations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    client_id INTEGER,
+-- Table opérations
+CREATE TABLE IF NOT EXISTS operations (
+    id SERIAL PRIMARY KEY,
+    client_id INTEGER REFERENCES clients(id) ON DELETE CASCADE,
     type TEXT,
-    montant REAL,
-    date_operation TEXT,
-    remarque TEXT,
-    FOREIGN KEY(client_id) REFERENCES clients(id)
+    montant NUMERIC,
+    date_operation DATE,
+    remarque TEXT
 );
