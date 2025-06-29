@@ -33,6 +33,35 @@
       </div>
     </section>
 
+    <!-- ✅ Opérations futures -->
+    <section class="mb-5">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Opérations futures à venir</h5>
+          <table class="table table-bordered table-striped">
+            <thead class="table-light">
+              <tr>
+                <th>Date prévue</th>
+                <th>Type</th>
+                <th>Montant (€)</th>
+                <th>Client</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for op in prochaines_operations %}
+              <tr>
+                <td>{{ op.date_prevue }}</td>
+                <td>{{ op.type }}</td>
+                <td>{{ op.montant }}</td>
+                <td><a href="/client/{{ op.client_id }}" class="text-decoration-none">{{ op.nom }}</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <!-- Filtres et export -->
     <section class="mb-3">
       <form class="row g-2 align-items-end" method="GET" action="/">
