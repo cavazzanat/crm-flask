@@ -11,11 +11,11 @@ app.secret_key = 'secret_key_here'
 
 def get_db_connection():
     conn = psycopg2.connect(
-        host=os.environ.get('DB_HOST'),
-        database=os.environ.get('DB_NAME'),
-        user=os.environ.get('DB_USER'),
-        password=os.environ.get('DB_PASSWORD'),
-        port=os.environ.get('DB_PORT', 5432),
+        host=os.environ.get("DB_HOST"),
+        database=os.environ.get("DB_NAME"),
+        user=os.environ.get("DB_USER"),
+        password=os.environ.get("DB_PASSWORD"),
+        port=os.environ.get("DB_PORT"),
         cursor_factory=psycopg2.extras.RealDictCursor
     )
     return conn
@@ -33,6 +33,9 @@ def index():
 
     cur.execute("SELECT MAX(date_operation) FROM operations")
     derniere_operation = cur.fetchone()['max']
+
+    cur.execute("SELECT * FROM operations_futures WHERE date_prevue >= CURRENT_DATE ORDER BY date_prevue ASC")
+    operations_futures = cur.fetchall()
 
     ville = request.args.get('ville', '')
     recherche = request.args.get('recherche', '')
@@ -64,13 +67,25 @@ def index():
     cur.execute("SELECT DISTINCT ville FROM clients WHERE archive = false AND ville != ''")
     villes = [row['ville'] for row in cur.fetchall()]
 
+    cur.execute("""
+        SELECT o.date_prevue, o.type, o.montant, c.nom, c.id AS client_id
+        FROM operations_futures o
+        JOIN clients c ON c.id = o.client_id
+        WHERE c.archive = false
+        ORDER BY o.date_prevue ASC
+        LIMIT 10
+    """)
+    prochaines_operations = cur.fetchall()
+
     cur.close()
     conn.close()
 
     return render_template('index.html', clients=clients, archives=archives,
                            nb_clients=nb_clients, ca_total=ca_total,
                            derniere_operation=derniere_operation, ville=ville,
-                           recherche=recherche, tri=tri, villes=villes)
+                           recherche=recherche, tri=tri, villes=villes,
+                           operations_futures=operations_futures,
+                           prochaines_operations=prochaines_operations)
 
 @app.route('/export-clients')
 def export_clients():
@@ -181,9 +196,13 @@ def client_detail(id):
     cur.execute("SELECT COALESCE(SUM(montant), 0) FROM operations WHERE client_id = %s", (id,))
     ca_total = cur.fetchone()['coalesce']
 
+    cur.execute("SELECT * FROM operations_futures WHERE client_id = %s ORDER BY date_prevue ASC", (id,))
+    operations_futures = cur.fetchall()
+
     cur.close()
     conn.close()
-    return render_template('client.html', client=client, operations=operations, ca_total=ca_total)
+    return render_template('client.html', client=client, operations=operations,
+                           ca_total=ca_total, operations_futures=operations_futures)
 
 @app.route('/client/<int:id>/update', methods=['POST'])
 def update_client(id):
@@ -242,6 +261,26 @@ def delete_operation(id, op_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("DELETE FROM operations WHERE id = %s", (op_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect(f'/client/{id}')
+
+@app.route('/client/<int:id>/add-operation-future', methods=['POST'])
+def add_operation_future(id):
+    data = (
+        id,
+        request.form['type'],
+        float(request.form['montant']),
+        request.form['date_prevue'],
+        request.form.get('remarque', '')
+    )
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO operations_futures (client_id, type, montant, date_prevue, remarque)
+        VALUES (%s, %s, %s, %s, %s)
+    """, data)
     conn.commit()
     cur.close()
     conn.close()

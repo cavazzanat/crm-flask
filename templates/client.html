@@ -14,7 +14,7 @@
       <a href="/export-client/{{ client['id'] }}" class="btn btn-success">Exporter en CSV</a>
     </div>
 
-    <!-- Section 1 : Informations personnelles -->
+    <!-- Informations personnelles -->
     <div class="row g-3 mb-4">
       <div class="col-md-6">
         <form method="POST" action="/client/{{ client['id'] }}/update">
@@ -46,7 +46,7 @@
         </form>
       </div>
 
-      <!-- Piano Info -->
+      <!-- Piano -->
       <div class="col-md-6">
         <form method="POST" action="/client/{{ client['id'] }}/update-piano">
           <div class="mb-3">
@@ -62,39 +62,46 @@
       </div>
     </div>
 
-    <!-- Section 2 : Ajouter une opération -->
+    <!-- Ajouter une opération -->
     <div class="mb-4">
       <h3>Ajouter une opération</h3>
       <form method="POST" action="/client/{{ client['id'] }}/add-operation">
-        <div class="row g-3">
-          <div class="col-md-3">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-2">
+            <label class="form-label">Date</label>
             <input class="form-control" name="date_operation" type="date" required>
           </div>
           <div class="col-md-3">
+            <label class="form-label">Type</label>
             <input class="form-control" name="type" placeholder="Type d'opération" required>
           </div>
           <div class="col-md-2">
-            <input class="form-control" name="montant" placeholder="Montant" type="number" step="0.01" required>
+            <label class="form-label">Montant (€)</label>
+            <input class="form-control" name="montant" type="number" step="0.01" required>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
+            <label class="form-label">Remarques</label>
             <input class="form-control" name="remarque" placeholder="Remarques">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Futur ?</label><br>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="is_future" value="true" id="is_future">
+              <label class="form-check-label" for="is_future">Oui</label>
+            </div>
           </div>
         </div>
         <button class="btn btn-success mt-3">Ajouter</button>
       </form>
     </div>
 
-    <!-- Section 3 : Historique des opérations -->
-    <div>
+    <!-- Historique opérations -->
+    <div class="mb-5">
       <h3>Historique des opérations (Total : {{ ca_total }} €)</h3>
       <table class="table table-striped">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Montant</th>
-            <th>Remarques</th>
-            <th>Action</th>
+            <th>Date</th><th>Type</th><th>Montant</th><th>Remarques</th><th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -114,6 +121,29 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Opérations futures -->
+    <div>
+      <h3>Opérations futures programmées</h3>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Date prévue</th><th>Type</th><th>Montant</th><th>Remarques</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for op in operations_futures %}
+          <tr>
+            <td>{{ op['date_prevue'] }}</td>
+            <td>{{ op['type'] }}</td>
+            <td>{{ op['montant'] }} €</td>
+            <td>{{ op['remarque'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </body>
 </html>
