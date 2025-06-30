@@ -19,6 +19,24 @@ def get_db_connection():
         cursor_factory=psycopg2.extras.RealDictCursor
     )
     return conn
+def ensure_schema():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    # Vérifie si la colonne existe déjà
+    cur.execute("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'operations_futures' AND column_name = 'validee'
+    """)
+    result = cur.fetchone()
+    if not result:
+        cur.execute("ALTER TABLE operations_futures ADD COLUMN validee BOOLEAN DEFAULT FALSE")
+        conn.commit()
+    cur.close()
+    conn.close()
+
+ensure_schema()
+
 
 @app.route('/')
 def index():
