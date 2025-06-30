@@ -298,6 +298,65 @@ def add_operation_future(id):
     conn.close()
     return redirect(f'/client/{id}')
 
+@app.route('/client/<int:client_id>/edit-operation-future/<int:op_id>', methods=['POST'])
+def edit_operation_future(client_id, op_id):
+    date_prevue = request.form['date_prevue']
+    type_op = request.form['type']
+    montant = float(request.form['montant'])
+    remarque = request.form.get('remarque', '')
+    validee = request.form.get('validee') == 'on'
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if validee and date_prevue <= datetime.today().strftime('%Y-%m-%d'):
+        # déplacer vers opérations passées
+        cur.execute("SELECT client_id FROM operations_futures WHERE id = %s", (op_id,))
+        row = cur.fetchone()
+        if row:
+            cur.execute("""
+                INSERT INTO operations (client_id, type, montant, date_operation, remarque)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (client_id, type_op, montant, date_prevue, remarque))
+            cur.execute("DELETE FROM operations_futures WHERE id = %s", (op_id,))
+    else:
+        # simple mise à jour
+        cur.execute("""
+            UPDATE operations_futures
+            SET date_prevue = %s, type = %s, montant = %s, remarque = %s, validee = %s
+            WHERE id = %s
+        """, (date_prevue, type_op, montant, remarque, validee, op_id))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect(f'/client/{client_id}')
+
+@app.route('/client/<int:client_id>/edit-operation-future/<int:op_id>', methods=['POST'])
+def edit_operation_future(client_id, op_id):
+    date_prevue = request.form['date_prevue']
+    type_op = request.form['type']
+    montant = request.form['montant']
+    remarque = request.form.get('remarque', '')
+    validee = request.form.get('validee') == 'on'
+
+    # Si la date prévue est dans le futur, alors on peut modifier
+    if datetime.strptime(date_prevue, '%Y-%m-%d').date() > date.today():
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE operations_futures
+            SET date_prevue = %s, type = %s, montant = %s, remarque = %s, validee = %s
+            WHERE id = %s AND client_id = %s
+        """, (date_prevue, type_op, montant, remarque, validee, op_id, client_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+    # Sinon, on ignore ou on peut afficher un message (non implémenté ici)
+
+    return redirect(f'/client/{client_id}')
+
+
 @app.route('/reset-filters')
 def reset_filters():
     return redirect(url_for('index'))
