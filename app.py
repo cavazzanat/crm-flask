@@ -238,23 +238,35 @@ def update_piano(id):
 
 @app.route('/client/<int:id>/add-operation', methods=['POST'])
 def add_operation(id):
-    data = (
-        id,
-        request.form['type'],
-        float(request.form['montant']),
-        request.form['date_operation'],
-        request.form.get('remarque', '')
-    )
+    type_op = request.form['type']
+    montant = float(request.form['montant'])
+    date_op_str = request.form['date_operation']
+    remarque = request.form.get('remarque', '')
+
+    date_op = datetime.strptime(date_op_str, "%Y-%m-%d").date()
+    today = datetime.today().date()
+
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO operations (client_id, type, montant, date_operation, remarque)
-        VALUES (%s, %s, %s, %s, %s)
-    """, data)
+
+    if date_op > today:
+        # Ajouter en tant qu'opération future
+        cur.execute("""
+            INSERT INTO operations_futures (client_id, type, montant, date_prevue, remarque)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (id, type_op, montant, date_op_str, remarque))
+    else:
+        # Ajouter en tant qu'opération passée
+        cur.execute("""
+            INSERT INTO operations (client_id, type, montant, date_operation, remarque)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (id, type_op, montant, date_op_str, remarque))
+
     conn.commit()
     cur.close()
     conn.close()
     return redirect(f'/client/{id}')
+
 
 @app.route('/client/<int:id>/delete-operation/<int:op_id>', methods=['POST'])
 def delete_operation(id, op_id):
