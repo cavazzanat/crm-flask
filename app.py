@@ -250,13 +250,11 @@ def add_operation(id):
     cur = conn.cursor()
 
     if date_op > today:
-        # Ajouter en tant qu'opération future
         cur.execute("""
             INSERT INTO operations_futures (client_id, type, montant, date_prevue, remarque)
             VALUES (%s, %s, %s, %s, %s)
         """, (id, type_op, montant, date_op_str, remarque))
     else:
-        # Ajouter en tant qu'opération passée
         cur.execute("""
             INSERT INTO operations (client_id, type, montant, date_operation, remarque)
             VALUES (%s, %s, %s, %s, %s)
@@ -267,32 +265,11 @@ def add_operation(id):
     conn.close()
     return redirect(f'/client/{id}')
 
-
 @app.route('/client/<int:id>/delete-operation/<int:op_id>', methods=['POST'])
 def delete_operation(id, op_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("DELETE FROM operations WHERE id = %s", (op_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return redirect(f'/client/{id}')
-
-@app.route('/client/<int:id>/add-operation-future', methods=['POST'])
-def add_operation_future(id):
-    data = (
-        id,
-        request.form['type'],
-        float(request.form['montant']),
-        request.form['date_prevue'],
-        request.form.get('remarque', '')
-    )
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO operations_futures (client_id, type, montant, date_prevue, remarque)
-        VALUES (%s, %s, %s, %s, %s)
-    """, data)
     conn.commit()
     cur.close()
     conn.close()
@@ -310,7 +287,6 @@ def edit_operation_future(client_id, op_id):
     cur = conn.cursor()
 
     if validee and date_prevue <= datetime.today().strftime('%Y-%m-%d'):
-        # déplacer vers opérations passées
         cur.execute("SELECT client_id FROM operations_futures WHERE id = %s", (op_id,))
         row = cur.fetchone()
         if row:
@@ -320,7 +296,6 @@ def edit_operation_future(client_id, op_id):
             """, (client_id, type_op, montant, date_prevue, remarque))
             cur.execute("DELETE FROM operations_futures WHERE id = %s", (op_id,))
     else:
-        # simple mise à jour
         cur.execute("""
             UPDATE operations_futures
             SET date_prevue = %s, type = %s, montant = %s, remarque = %s, validee = %s
@@ -331,31 +306,6 @@ def edit_operation_future(client_id, op_id):
     cur.close()
     conn.close()
     return redirect(f'/client/{client_id}')
-
-@app.route('/client/<int:client_id>/edit-operation-future/<int:op_id>', methods=['POST'])
-def edit_operation_future(client_id, op_id):
-    date_prevue = request.form['date_prevue']
-    type_op = request.form['type']
-    montant = request.form['montant']
-    remarque = request.form.get('remarque', '')
-    validee = request.form.get('validee') == 'on'
-
-    # Si la date prévue est dans le futur, alors on peut modifier
-    if datetime.strptime(date_prevue, '%Y-%m-%d').date() > date.today():
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            UPDATE operations_futures
-            SET date_prevue = %s, type = %s, montant = %s, remarque = %s, validee = %s
-            WHERE id = %s AND client_id = %s
-        """, (date_prevue, type_op, montant, remarque, validee, op_id, client_id))
-        conn.commit()
-        cur.close()
-        conn.close()
-    # Sinon, on ignore ou on peut afficher un message (non implémenté ici)
-
-    return redirect(f'/client/{client_id}')
-
 
 @app.route('/reset-filters')
 def reset_filters():
