@@ -62,7 +62,27 @@
       </div>
     </section>
 
-    <!-- Filtres et export -->
+    <!-- ✅ Ajout client -->
+    <section class="mb-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Ajouter un nouveau client</h5>
+          <form method="POST" action="/add-client" class="row g-3">
+            <div class="col-md-6"><input name="nom" class="form-control" placeholder="Nom" required></div>
+            <div class="col-md-6"><input name="prenom" class="form-control" placeholder="Prénom" required></div>
+            <div class="col-md-4"><input name="ville" class="form-control" placeholder="Ville" required></div>
+            <div class="col-md-4"><input name="code_postal" class="form-control" placeholder="Code postal"></div>
+            <div class="col-md-4"><input name="telephone" class="form-control" placeholder="Téléphone"></div>
+            <div class="col-12"><input name="adresse" class="form-control" placeholder="Adresse"></div>
+            <div class="col-12 text-end">
+              <button type="submit" class="btn btn-primary">Ajouter</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filtres -->
     <section class="mb-3">
       <form class="row g-2 align-items-end" method="GET" action="/">
         <div class="col-md-3">
@@ -93,7 +113,7 @@
       </form>
     </section>
 
-    <!-- Tableau des clients -->
+    <!-- Clients actifs -->
     <section>
       <div class="card shadow-sm">
         <div class="card-body">
@@ -142,7 +162,7 @@
       </div>
     </section>
 
-    <!-- Section archive -->
+    <!-- Clients archivés -->
     <section class="mt-5">
       <div class="card">
         <div class="card-body">
